@@ -20,6 +20,12 @@ enum Shift {
   NIGHT
 }
 
+enum Shift {
+  MORNING
+  AFTERNOON
+  NIGHT
+}
+
 model User {
   id         String    @id @default(uuid())
   email      String    @unique
@@ -31,6 +37,7 @@ model User {
   department String?
   shift      Shift?
   status     Boolean   @default(true)
+  imageUrl   String?   // Added image URL field
   lastLogin  DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
