@@ -1,0 +1,7 @@
+FROM postgres:15
+
+ENV POSTGRES_DB=userdb
+ENV POSTGRES_USER=username
+ENV POSTGRES_PASSWORD=password
+
+EXPOSE 5432
