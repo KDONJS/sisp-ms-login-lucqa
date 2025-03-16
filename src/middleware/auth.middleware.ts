@@ -1,48 +1,59 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { createClient } from 'redis';
+import logger from '../utils/logger';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any;
-    }
-  }
+// Define a custom interface to extend Request
+export interface AuthRequest extends Request {
+  user?: any;
 }
 
-const redisClient = createClient({
-  url: process.env.REDIS_URL
-});
-
-// Connect to Redis
-(async () => {
-  await redisClient.connect();
-})().catch(console.error);
-
-export const authMiddleware = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-
+    // Get the authorization header
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader) {
+      logger.warn('Authentication failed: No authorization header');
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+    
+    // Check if it starts with "Bearer "
+    if (!authHeader.startsWith('Bearer ')) {
+      logger.warn('Authentication failed: Invalid authorization format');
+      res.status(401).json({ message: 'Invalid authorization format' });
+      return;
+    }
+    
+    // Extract the token
+    const token = authHeader.split(' ')[1];
+    
     if (!token) {
+      logger.warn('Authentication failed: No token provided');
       res.status(401).json({ message: 'No token provided' });
       return;
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const storedToken = await redisClient.get(`token:${decoded.userId}`);
-
-    if (!storedToken || storedToken !== token) {
+    
+    // Log token for debugging (remove in production)
+    logger.debug('Processing token:', token.substring(0, 20) + '...');
+    
+    try {
+      // Verify the token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+      
+      // Add user info to request object
+      (req as AuthRequest).user = decoded;
+      
+      logger.info(`User authenticated: ${(decoded as any).email || 'Unknown'}`);
+      next();
+    } catch (error) {
+      logger.warn('Token verification failed:', error);
       res.status(401).json({ message: 'Invalid or expired token' });
       return;
     }
-
-    req.user = decoded;
-    next();
   } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
+    logger.error('Authentication middleware error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+    return;
   }
 };

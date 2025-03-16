@@ -20,18 +20,18 @@ router.post('/',
       } : null,
       bodyKeys: Object.keys(req.body || {})
     });
-    userController.createUser(req, res).catch(next);
+    Promise.resolve(userController.createUser(req, res)).catch(next);
   }
 );
 
 // Get all users
-router.get('/', authMiddleware, (req, res, next) => {
-  userController.getUsers(req, res).catch(next);
+router.get('/', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(userController.getUsers(req, res)).catch(next);
 });
 
 // Get user by ID
-router.get('/:id', authMiddleware, (req, res, next) => {
-  userController.getUserById(req, res).catch(next);
+router.get('/:id', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(userController.getUserById(req, res)).catch(next);
 });
 
 // Update user
@@ -39,7 +39,7 @@ router.put('/:id',
   authMiddleware,
   handleFileUpload('image'),
   (req: Request, res: Response, next: NextFunction) => {
-    userController.updateUser(req, res).catch(next);
+    Promise.resolve(userController.updateUser(req, res)).catch(next);
   }
 );
 
@@ -49,13 +49,13 @@ router.patch('/:id/photo',
   debugRequest,
   handleFileUpload('image'),
   (req: Request, res: Response, next: NextFunction) => {
-    userController.updateUserPhoto(req, res).catch(next);
+    Promise.resolve(userController.updateUserPhoto(req, res)).catch(next);
   }
 );
 
 // Delete user
-router.delete('/:id', authMiddleware, (req, res, next) => {
-  userController.deleteUser(req, res).catch(next);
+router.delete('/:id', authMiddleware, (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(userController.deleteUser(req, res)).catch(next);
 });
 
 export default router;
