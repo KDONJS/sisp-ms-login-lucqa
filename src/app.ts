@@ -3,7 +3,10 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import installRoutes from './routes/installRoutes';
+import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 import { requireSystemInit } from './middleware/systemInitCheck';
+import logger from './utils/logger';
 
 dotenv.config();
 
@@ -25,13 +28,19 @@ app.use('/install', installRoutes);
 
 // Protected routes - require system to be initialized
 app.use('/api', requireSystemInit, (req, res, next) => {
-  // Here you would add your auth middleware and other API routes
+  // Add auth and user routes
   next();
 });
 
+// Auth routes
+app.use('/api/auth', authRoutes);
+
+// User routes
+app.use('/api/users', userRoutes);
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
 });
 
 export default app;
