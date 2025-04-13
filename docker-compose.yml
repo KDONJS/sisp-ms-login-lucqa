@@ -1,32 +1,29 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  postgres:
+  app:
     build:
       context: .
-      dockerfile: docker/postgres.dockerfile
+      dockerfile: Dockerfile
+    container_name: login-ms
+    restart: unless-stopped
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "3500:3000"
+    env_file:
+      - .env
     networks:
-      - app-network
-
-  redis:
-    build:
-      context: .
-      dockerfile: docker/redis.dockerfile
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - app-network
-
-volumes:
-  postgres_data:
-  redis_data:
+      - backend
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.login-ms.rule=Host(`login-ms.redteslanet.com`)"
+      - "traefik.http.routers.login-ms.entrypoints=websecure"
+      - "traefik.http.routers.login-ms.tls.certresolver=myresolver"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.services.login-ms.loadbalancer.server.port=3000"
 
 networks:
-  app-network:
+  backend:
     driver: bridge
+  traefik:
+    external: true
