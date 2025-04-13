@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instalación del Sistema</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            padding: 40px;
+            width: 450px;
+            max-width: 90%;
+            transition: all 0.3s ease;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+            transition: all 0.2s;
+        }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+            background-color: #f8fafc;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+            background-color: #fff;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .error {
+            color: #e53e3e;
+            margin-top: 20px;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #fff5f5;
+            border: 1px solid #fed7d7;
+            display: none;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo h2 {
+            color: #3498db;
+            font-size: 32px;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+        .logo span {
+            color: #2c3e50;
+            font-weight: 300;
+        }
+        .success-screen {
+            text-align: center;
+            display: none;
+        }
+        .success-icon {
+            font-size: 80px;
+            color: #48bb78;
+            margin-bottom: 20px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+            display: none;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            height: 3px;
+            width: 100%;
+            background-color: #e2e8f0;
+            z-index: 0;
+        }
+        .progress-bar-fill {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            height: 3px;
+            width: 0%;
+            background-color: #3498db;
+            z-index: 1;
+            transition: width 0.3s ease;
+        }
+        .progress-step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #718096;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+        .progress-step.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .progress-step.completed {
+            background-color: #48bb78;
+            color: white;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container" id="mainContainer">
+        <div class="logo">
+            <h2>SISP<span>Admin</span></h2>
+        </div>
+        
+        <!-- Installation Form -->
+        <div id="installationForm" class="step active">
+            <h1>Configuración Inicial del Sistema</h1>
+            
+            <div class="progress-bar">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+                <div class="progress-step active" id="step1">1</div>
+                <div class="progress-step" id="step2">2</div>
+                <div class="progress-step" id="step3">3</div>
+            </div>
+            
+            <form id="installForm">
+                <div class="form-group">
+                    <label for="email">Correo Electrónico del Administrador</label>
+                    <input type="email" id="email" name="email" required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="name">Nombre del Administrador</label>
+                    <input type="text" id="name" name="name" required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirmPassword">Confirmar Contraseña</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                
+                <button type="submit" id="submitBtn">
+                    Inicializar Sistema
+                    <div class="loading" id="loadingSpinner"></div>
+                </button>
+                
+                <div id="errorMessage" class="error"></div>
+            </form>
+        </div>
+        
+        <!-- Success Screen -->
+        <div id="successScreen" class="step">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h1>¡Instalación Completada!</h1>
+            <p>El sistema ha sido inicializado correctamente. El usuario administrador ha sido creado.</p>
+            <p>Serás redirigido al inicio de sesión en <span id="countdown">5</span> segundos...</p>
+            <button id="loginBtn" style="margin-top: 20px;">
+                Ir al Inicio de Sesión
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Elements
+        const installForm = document.getElementById('installForm');
+        const installationForm = document.getElementById('installationForm');
+        const successScreen = document.getElementById('successScreen');
+        const errorMessage = document.getElementById('errorMessage');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const submitBtn = document.getElementById('submitBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const countdown = document.getElementById('countdown');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        
+        // Progress animation
+        let currentStep = 1;
+        updateProgress(currentStep);
+        
+        function updateProgress(step) {
+            const percentage = (step - 1) * 50;
+            progressBarFill.style.width = `${percentage}%`;
+            
+            // Reset all steps
+            [step1, step2, step3].forEach(s => {
+                s.classList.remove('active', 'completed');
+            });
+            
+            // Set active and completed steps
+            for (let i = 1; i <= 3; i++) {
+                const stepEl = document.getElementById(`step${i}`);
+                if (i < step) {
+                    stepEl.classList.add('completed');
+                    stepEl.innerHTML = '<i class="fas fa-check"></i>';
+                } else if (i === step) {
+                    stepEl.classList.add('active');
+                } else {
+                    stepEl.classList.remove('active', 'completed');
+                    stepEl.textContent = i;
+                }
+            }
+        }
+        
+        // Form submission
+        installForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const name = document.getElementById('name').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validation
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Las contraseñas no coinciden';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // Show loading
+            loadingSpinner.style.display = 'inline-block';
+            submitBtn.disabled = true;
+            errorMessage.style.display = 'none';
+            
+            // Update progress
+            currentStep = 2;
+            updateProgress(currentStep);
+            
+            try {
+                const response = await fetch('/install', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, name, password })
+                });
+                
+                const data = await response.json();
+                
+                // Update progress
+                currentStep = 3;
+                updateProgress(currentStep);
+                
+                // Simulate a slight delay for better UX
+                setTimeout(() => {
+                    if (response.ok) {
+                        // Show success screen
+                        installationForm.classList.remove('active');
+                        successScreen.classList.add('active');
+                        
+                        // Start countdown
+                        let seconds = 5;
+                        const countdownInterval = setInterval(() => {
+                            seconds--;
+                            countdown.textContent = seconds;
+                            if (seconds <= 0) {
+                                clearInterval(countdownInterval);
+                                window.location.href = data.redirectTo || '/login';
+                            }
+                        }, 1000);
+                    } else {
+                        // Show error
+                        errorMessage.textContent = data.message || 'Error en la instalación';
+                        errorMessage.style.display = 'block';
+                        loadingSpinner.style.display = 'none';
+                        submitBtn.disabled = false;
+                        currentStep = 1;
+                        updateProgress(currentStep);
+                    }
+                }, 800);
+                
+            } catch (error) {
+                errorMessage.textContent = 'Error de conexión';
+                errorMessage.style.display = 'block';
+                loadingSpinner.style.display = 'none';
+                submitBtn.disabled = false;
+                console.error('Error:', error);
+                currentStep = 1;
+                updateProgress(currentStep);
+            }
+        });
+        
+        // Login button click
+        loginBtn.addEventListener('click', function() {
+            window.location.href = '/login';
+        });
+        
+        // Input animations
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.querySelector('label').style.color = '#3498db';
+            });
+            
+            input.addEventListener('blur', () => {
+                input.parentElement.querySelector('label').style.color = '#4a5568';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -20,11 +20,7 @@ enum Shift {
   NIGHT
 }
 
-enum Shift {
-  MORNING
-  AFTERNOON
-  NIGHT
-}
+// Remove the duplicate Shift enum here
 
 model User {
   id         String    @id @default(uuid())
