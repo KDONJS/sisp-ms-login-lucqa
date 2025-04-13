@@ -23,6 +23,11 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'ejs'); // Puedes usar EJS como motor de plantillas
 
+// Root route - landing page
+app.get('/', (req, res) => {
+  res.render('index');
+});
+
 // Installation routes - no auth required
 app.use('/install', installRoutes);
 
