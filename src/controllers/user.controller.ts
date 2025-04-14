@@ -3,6 +3,7 @@ import { UserService } from '../services/user.service';
 import { Role, Prisma } from '@prisma/client';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import bcrypt from 'bcrypt';
 import logger from '../utils/logger';
 
 const userService = new UserService();
@@ -46,8 +47,22 @@ export class UserController {
         hasFile: !!req.file 
       });
       
+      // Hash the password before saving
+      let hashedPassword;
+      try {
+        hashedPassword = await bcrypt.hash(req.body.password, 10);
+        logger.debug('Password hashed successfully');
+      } catch (hashError) {
+        logger.error('Password hashing error:', hashError);
+        return res.status(500).json({ 
+          message: 'Error processing password',
+          details: hashError instanceof Error ? hashError.message : 'Unknown error'
+        });
+      }
+      
       const userData = {
         ...req.body,
+        password: hashedPassword, // Use the hashed password
         status: Boolean(req.body.status),
         lastLogin: null,
         imageUrl: undefined as string | undefined
@@ -149,6 +164,20 @@ export class UserController {
       const userData = {
         ...req.body
       };
+
+      // Hash the password if it's being updated
+      if (userData.password) {
+        try {
+          userData.password = await bcrypt.hash(userData.password, 10);
+          logger.debug('Password hashed successfully for update');
+        } catch (hashError) {
+          logger.error('Password hashing error:', hashError);
+          return res.status(500).json({ 
+            message: 'Error processing password',
+            details: hashError instanceof Error ? hashError.message : 'Unknown error'
+          });
+        }
+      }
 
       // Handle file upload if present
       if (req.file) {
