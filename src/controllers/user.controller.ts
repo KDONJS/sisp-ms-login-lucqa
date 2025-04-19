@@ -153,129 +153,122 @@ export class UserController {
     }
   }
 
+  // PATCH /users/:id
   async updateUser(req: Request & { file?: Express.Multer.File }, res: Response) {
+    const userId = req.params.id;
     try {
-      logger.info(`UpdateUser started for ID: ${req.params.id}`);
-      logger.debug('UpdateUser request details:', { 
-        body: req.body, 
-        hasFile: !!req.file 
-      });
-      
-      const userData = {
-        ...req.body
-      };
+      logger.info(`UpdateUser iniciado para ID: ${userId}`);
+      logger.debug('Request body:', req.body, 'Has file:', !!req.file);
 
-      // Hash the password if it's being updated
-      if (userData.password) {
+      // 1) Preparamos el objeto de actualización
+      const updateData: Prisma.UserUpdateInput = {};
+      const { password, status, ...otros } = req.body;
+
+      if (status !== undefined) {
+        updateData.status = Boolean(status);
+      }
+      Object.assign(updateData, otros);
+
+      // 2) Si viene nueva contraseña, la hasheamos
+      if (password) {
         try {
-          userData.password = await bcrypt.hash(userData.password, 10);
-          logger.debug('Password hashed successfully for update');
-        } catch (hashError) {
-          logger.error('Password hashing error:', hashError);
-          return res.status(500).json({ 
-            message: 'Error processing password',
-            details: hashError instanceof Error ? hashError.message : 'Unknown error'
+          updateData.password = await bcrypt.hash(password, 10);
+          logger.debug('Contraseña hasheada correctamente');
+        } catch (err) {
+          logger.error('Error al hashear contraseña:', err);
+          return res.status(500).json({
+            message: 'Error procesando contraseña',
+            details: err instanceof Error ? err.message : String(err)
           });
         }
       }
 
-      // Handle file upload if present
+      // 3) Si llega imagen, validamos y subimos a S3
       if (req.file) {
+        const mime = req.file.mimetype;
+        if (!['image/jpeg', 'image/png', 'image/jpg'].includes(mime)) {
+          logger.warn(`Tipo de archivo inválido: ${mime}`);
+          return res.status(400).json({ message: 'Tipo de archivo inválido. Sólo JPG/PNG.' });
+        }
+
+        const fileName = `users/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const uploadParams = {
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Key: fileName,
+          Body: req.file.buffer,
+          ContentType: mime
+        };
+
         try {
-          logger.info(`Processing file: ${req.file.originalname}`);
-          
-          if (!['image/jpeg', 'image/png', 'image/jpg'].includes(req.file.mimetype)) {
-            logger.warn(`Invalid file type: ${req.file.mimetype}`);
-            return res.status(400).json({ message: 'Invalid file type. Only JPG and PNG allowed.' });
-          }
-
-          const fileName = `users/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-          logger.debug(`Generated filename: ${fileName}`);
-
-          const uploadParams = {
-            Bucket: process.env.AWS_S3_BUCKET!,
-            Key: fileName,
-            Body: req.file.buffer,
-            ContentType: req.file.mimetype,
-          };
-
-          logger.info('Starting S3 upload...');
+          logger.info(`Subiendo imagen de perfil a S3 para usuario ${userId}…`);
           await s3Client.send(new PutObjectCommand(uploadParams));
-
-          userData.imageUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-          logger.info(`Image uploaded successfully: ${userData.imageUrl}`);
-        } catch (uploadError: any) {
-          logger.error('S3 upload error:', uploadError);
-          return res.status(500).json({ 
-            message: 'Error uploading image',
-            details: uploadError.message || 'Unknown error'
+          const imageUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+          updateData.imageUrl = imageUrl;
+          logger.info(`Imagen subida correctamente: ${imageUrl}`);
+        } catch (uploadErr: any) {
+          logger.error('Error subiendo imagen a S3:', uploadErr);
+          return res.status(500).json({
+            message: 'Error subiendo imagen',
+            details: uploadErr.message || String(uploadErr)
           });
         }
       }
 
-      const user = await userService.updateUser(req.params.id, userData);
-      if (!user) {
-        logger.warn(`User not found with ID: ${req.params.id}`);
-        return res.status(404).json({ message: 'User not found' });
+      // 4) Ejecutamos la actualización en base de datos
+      const updated = await userService.updateUser(userId, updateData);
+      if (!updated) {
+        logger.warn(`Usuario no encontrado: ${userId}`);
+        return res.status(404).json({ message: 'Usuario no encontrado' });
       }
-      
-      logger.info(`User updated successfully with ID: ${user.id}`);
-      res.json(user);
-    } catch (error) {
-      logger.error('Update user error:', error);
-      res.status(500).json({ 
-        message: 'Error updating user',
-        details: error instanceof Error ? error.message : 'Unknown error'
+
+      logger.info(`Usuario actualizado con éxito: ${updated.id}`);
+      res.json(updated);
+
+    } catch (err) {
+      logger.error('Error en updateUser:', err);
+      res.status(500).json({
+        message: 'Error actualizando usuario',
+        details: err instanceof Error ? err.message : String(err)
       });
     }
   }
 
-  // New method to update only the user's photo
+  // PATCH /users/:id/photo
   async updateUserPhoto(req: Request & { file?: Express.Multer.File }, res: Response) {
     try {
-      logger.info(`UpdateUserPhoto started for ID: ${req.params.id}`);
-      
+      logger.info(`UpdateUserPhoto iniciado para ID: ${req.params.id}`);
+
       if (!req.file) {
-        logger.warn('No file provided for photo update');
-        return res.status(400).json({ message: 'No image file provided' });
+        return res.status(400).json({ message: 'No se envió ninguna imagen' });
       }
-      
-      logger.info(`Processing file: ${req.file.originalname}`);
-      
-      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(req.file.mimetype)) {
-        logger.warn(`Invalid file type: ${req.file.mimetype}`);
-        return res.status(400).json({ message: 'Invalid file type. Only JPG and PNG allowed.' });
+      const mime = req.file.mimetype;
+      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(mime)) {
+        return res.status(400).json({ message: 'Tipo de archivo inválido. Sólo JPG/PNG.' });
       }
 
       const fileName = `users/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      logger.debug(`Generated filename: ${fileName}`);
-
-      const uploadParams = {
+      await s3Client.send(new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET!,
         Key: fileName,
         Body: req.file.buffer,
-        ContentType: req.file.mimetype,
-      };
-
-      logger.info('Starting S3 upload...');
-      await s3Client.send(new PutObjectCommand(uploadParams));
-
+        ContentType: mime
+      }));
       const imageUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-      logger.info(`Image uploaded successfully: ${imageUrl}`);
-      
+
       const user = await userService.updateUser(req.params.id, { imageUrl });
       if (!user) {
-        logger.warn(`User not found with ID: ${req.params.id}`);
-        return res.status(404).json({ message: 'User not found' });
+        logger.warn(`Usuario no encontrado: ${req.params.id}`);
+        return res.status(404).json({ message: 'Usuario no encontrado' });
       }
-      
-      logger.info(`User photo updated successfully for ID: ${user.id}`);
+
+      logger.info(`Foto de usuario actualizada con éxito: ${user.id}`);
       res.json(user);
+
     } catch (error) {
-      logger.error('Update user photo error:', error);
-      res.status(500).json({ 
-        message: 'Error updating user photo',
-        details: error instanceof Error ? error.message : 'Unknown error'
+      logger.error('Error en updateUserPhoto:', error);
+      res.status(500).json({
+        message: 'Error actualizando foto',
+        details: error instanceof Error ? error.message : String(error)
       });
     }
   }

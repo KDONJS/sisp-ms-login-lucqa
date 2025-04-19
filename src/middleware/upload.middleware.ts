@@ -7,13 +7,10 @@ const storage = multer.memoryStorage();
 
 // Debug middleware to check request before multer processes it
 export const debugRequest = (req: Request, res: Response, next: NextFunction) => {
-  logger.debug('Incoming request:', {
-    method: req.method,
-    contentType: req.headers['content-type'],
-    hasMultipart: req.headers['content-type']?.includes('multipart/form-data'),
-    boundary: req.headers['content-type']?.split('boundary=')[1],
-    bodyKeys: Object.keys(req.body || {})
-  });
+  console.log('→ [DEBUG REQUEST]', req.method, req.originalUrl);
+  console.log('   Headers:', req.headers);
+  console.log('   Content-Type:', req.get('content-type'));
+  console.log('   Body keys:', Object.keys(req.body || {}));
   next();
 };
 

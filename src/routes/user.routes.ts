@@ -4,6 +4,7 @@ import { handleFileUpload, debugRequest } from '../middleware/upload.middleware'
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
+const userCtrl = new UserController();
 const userController = new UserController();
 
 // Create user
@@ -35,11 +36,13 @@ router.get('/:id', authMiddleware, (req: Request, res: Response, next: NextFunct
 });
 
 // Update user
-router.put('/:id', 
+router.put(
+  '/:id',
   authMiddleware,
-  handleFileUpload('image'),
-  (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(userController.updateUser(req, res)).catch(next);
+  debugRequest,
+  handleFileUpload('image'),      // <- Multer aquí
+  (req, res, next) => {
+    Promise.resolve(userCtrl.updateUser(req as any, res)).catch(next);
   }
 );
 
